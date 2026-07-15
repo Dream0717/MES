@@ -8,6 +8,11 @@ obj/
 *.log
 appsettings.*.json
 
+# Database files
+*.db
+*.db-shm
+*.db-wal
+
 # Build outputs
 backend/MiniMES.API/publish/
 frontend/dist/
