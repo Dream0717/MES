@@ -178,6 +178,8 @@ namespace MiniMES.Infrastructure.Migrations
                     DefectQuantity = table.Column<int>(type: "int", nullable: false),
                     ReportedBy = table.Column<long>(type: "bigint", nullable: false),
                     ReportedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    Remark = table.Column<string>(type: "longtext", nullable: true)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
                     CreatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false)
                 },

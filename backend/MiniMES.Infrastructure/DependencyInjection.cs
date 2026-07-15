@@ -21,10 +21,21 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        // 配置数据库
-        var connectionString = configuration.GetConnectionString("DefaultConnection");
-        services.AddDbContext<MiniMesDbContext>(options =>
-            options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+        // 配置数据库 - 支持 SQLite（开发）和 MySQL（生产）
+        var dbProvider = configuration.GetValue<string>("DatabaseProvider") ?? "SQLite";
+        if (dbProvider == "MySQL")
+        {
+            var connectionString = configuration.GetConnectionString("DefaultConnection");
+            services.AddDbContext<MiniMesDbContext>(options =>
+                options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+        }
+        else
+        {
+            var sqlitePath = configuration.GetConnectionString("SQLiteConnection")
+                ?? "Data Source=MES.db";
+            services.AddDbContext<MiniMesDbContext>(options =>
+                options.UseSqlite(sqlitePath));
+        }
 
         // 注册Repositories
         services.AddScoped<IUserRepository, UserRepository>();

@@ -12,7 +12,7 @@ using MiniMES.Infrastructure.Data;
 namespace MiniMES.Infrastructure.Migrations
 {
     [DbContext(typeof(MiniMesDbContext))]
-    [Migration("20260312080216_InitialCreate")]
+    [Migration("20260715073446_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -246,6 +246,9 @@ namespace MiniMES.Infrastructure.Migrations
 
                     b.Property<int>("GoodQuantity")
                         .HasColumnType("int");
+
+                    b.Property<string>("Remark")
+                        .HasColumnType("longtext");
 
                     b.Property<DateTime>("ReportedAt")
                         .HasColumnType("datetime(6)");
