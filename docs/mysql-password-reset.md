@@ -1,0 +1,9 @@
+-- 阿里云RDS或其他远程MySQL：填入你自己的连接串即可
+-- 本地MySQL root密码重置脚本（管理员身份运行PowerShell）：
+--   1. net stop MySQL80
+--   2. "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysqld.exe" --skip-grant-tables --console
+--   3. 新开终端执行：mysql -u root
+--      > FLUSH PRIVILEGES;
+--      > ALTER USER 'root'@'localhost' IDENTIFIED BY '你的密码';
+--      > exit
+--   4. 关闭mysqld进程，net start MySQL80
