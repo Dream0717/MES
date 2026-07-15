@@ -6,12 +6,13 @@ namespace MES.Desktop.ViewModels;
 
 public class LoginViewModel : ViewModelBase
 {
-    readonly MesApiService _api;
-
-    public LoginViewModel(MesApiService api) => _api = api;
+    readonly AuthService _auth;
+    public LoginViewModel(AuthService auth) => _auth = auth;
 
     public string Username { get; set; } = "admin";
-    public string Password { get; set; } = "admin123";
+
+    string _password = "admin123";
+    public string Password { get => _password; set => _password = value; }
 
     string _err = "";
     public string Error { get => _err; set => Set(ref _err, value); }
@@ -22,21 +23,19 @@ public class LoginViewModel : ViewModelBase
     public ICommand LoginCmd => new AsyncRelayCommand(async () =>
     {
         Error = ""; IsBusy = true;
+        await Task.Delay(50); // let UI breathe
         try
         {
-            var r = await _api.LoginAsync(new() { Username = Username, Password = Password });
-            if (r.Success && r.Data != null)
+            if (_auth.Login(Username, Password))
             {
-                _api.Token = r.Data.Token;
-                // 通知主窗口登录成功，关闭登录窗口
                 Application.Current.Properties["LoggedIn"] = true;
-                Application.Current.Properties["UserName"] = r.Data.RealName;
+                Application.Current.Properties["UserName"] = _auth.CurrentRealName;
                 foreach (Window w in Application.Current.Windows)
                     if (w is Views.LoginWindow) { w.DialogResult = true; w.Close(); }
             }
-            else Error = r.Message ?? "登录失败";
+            else Error = "用户名或密码错误";
         }
-        catch (Exception ex) { Error = $"连接失败: {ex.Message}"; }
+        catch (Exception ex) { Error = $"错误: {ex.Message}"; }
         finally { IsBusy = false; }
     });
 }
