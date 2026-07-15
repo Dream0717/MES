@@ -4,92 +4,29 @@ using System.Windows.Input;
 
 namespace MES.Desktop.ViewModels;
 
-public abstract class ViewModelBase : INotifyPropertyChanged
+public class ViewModelBase : INotifyPropertyChanged
 {
     public event PropertyChangedEventHandler? PropertyChanged;
-
-    protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
-    {
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-    }
-
-    protected bool SetProperty<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
-    {
-        if (EqualityComparer<T>.Default.Equals(field, value))
-            return false;
-        field = value;
-        OnPropertyChanged(propertyName);
-        return true;
-    }
-
-    private bool _isBusy;
-    public bool IsBusy
-    {
-        get => _isBusy;
-        set => SetProperty(ref _isBusy, value);
-    }
+    protected void OnPropertyChanged([CallerMemberName] string? n = null) => PropertyChanged?.Invoke(this, new(n));
+    protected bool Set<T>(ref T f, T v, [CallerMemberName] string? n = null) { if (EqualityComparer<T>.Default.Equals(f, v)) return false; f = v; OnPropertyChanged(n); return true; }
 }
 
 public class RelayCommand : ICommand
 {
-    private readonly Action<object?> _execute;
-    private readonly Func<object?, bool>? _canExecute;
-
-    public RelayCommand(Action<object?> execute, Func<object?, bool>? canExecute = null)
-    {
-        _execute = execute ?? throw new ArgumentNullException(nameof(execute));
-        _canExecute = canExecute;
-    }
-
-    public RelayCommand(Action execute, Func<bool>? canExecute = null)
-        : this(_ => execute(), canExecute is null ? null : _ => canExecute()) { }
-
-    public event EventHandler? CanExecuteChanged
-    {
-        add => CommandManager.RequerySuggested += value;
-        remove => CommandManager.RequerySuggested -= value;
-    }
-
-    public bool CanExecute(object? parameter) => _canExecute?.Invoke(parameter) ?? true;
-    public void Execute(object? parameter) => _execute(parameter);
+    readonly Action<object?> _e; readonly Func<object?, bool>? _c;
+    public RelayCommand(Action<object?> e, Func<object?, bool>? c = null) { _e = e; _c = c; }
+    public RelayCommand(Action e, Func<bool>? c = null) : this(_ => e(), c is null ? null : _ => c()) { }
+    public event EventHandler? CanExecuteChanged { add => CommandManager.RequerySuggested += value; remove => CommandManager.RequerySuggested -= value; }
+    public bool CanExecute(object? p) => _c?.Invoke(p) ?? true;
+    public void Execute(object? p) => _e(p);
 }
 
 public class AsyncRelayCommand : ICommand
 {
-    private readonly Func<object?, Task> _execute;
-    private readonly Func<object?, bool>? _canExecute;
-    private bool _isExecuting;
-
-    public AsyncRelayCommand(Func<object?, Task> execute, Func<object?, bool>? canExecute = null)
-    {
-        _execute = execute ?? throw new ArgumentNullException(nameof(execute));
-        _canExecute = canExecute;
-    }
-
-    public AsyncRelayCommand(Func<Task> execute, Func<bool>? canExecute = null)
-        : this(_ => execute(), canExecute is null ? null : _ => canExecute()) { }
-
-    public event EventHandler? CanExecuteChanged
-    {
-        add => CommandManager.RequerySuggested += value;
-        remove => CommandManager.RequerySuggested -= value;
-    }
-
-    public bool CanExecute(object? parameter) => !_isExecuting && (_canExecute?.Invoke(parameter) ?? true);
-
-    public async void Execute(object? parameter)
-    {
-        if (_isExecuting) return;
-        _isExecuting = true;
-        CommandManager.InvalidateRequerySuggested();
-        try
-        {
-            await _execute(parameter);
-        }
-        finally
-        {
-            _isExecuting = false;
-            CommandManager.InvalidateRequerySuggested();
-        }
-    }
+    readonly Func<object?, Task> _e; readonly Func<object?, bool>? _c; bool _running;
+    public AsyncRelayCommand(Func<object?, Task> e, Func<object?, bool>? c = null) { _e = e; _c = c; }
+    public AsyncRelayCommand(Func<Task> e, Func<bool>? c = null) : this(_ => e(), c is null ? null : _ => c()) { }
+    public event EventHandler? CanExecuteChanged { add => CommandManager.RequerySuggested += value; remove => CommandManager.RequerySuggested -= value; }
+    public bool CanExecute(object? p) => !_running && (_c?.Invoke(p) ?? true);
+    public async void Execute(object? p) { if (_running) return; _running = true; CommandManager.InvalidateRequerySuggested(); try { await _e(p); } finally { _running = false; CommandManager.InvalidateRequerySuggested(); } }
 }

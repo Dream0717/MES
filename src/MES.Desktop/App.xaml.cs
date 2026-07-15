@@ -8,40 +8,34 @@ namespace MES.Desktop;
 
 public partial class App : Application
 {
-    private readonly ServiceProvider _serviceProvider;
+    readonly ServiceProvider _sp;
 
     public App()
     {
-        var services = new ServiceCollection();
-
-        // HttpClient
-        services.AddHttpClient<MesApiService>(client =>
-        {
-            client.BaseAddress = new Uri("http://localhost:5000/");
-            client.Timeout = TimeSpan.FromSeconds(10);
-        });
-
-        // ViewModels
-        services.AddSingleton<MainViewModel>();
-        services.AddTransient<LoginViewModel>();
-
-        // Views
-        services.AddTransient<LoginView>();
-
-        _serviceProvider = services.BuildServiceProvider();
+        var s = new ServiceCollection();
+        s.AddHttpClient<MesApiService>(c => { c.BaseAddress = new("http://localhost:5000/"); c.Timeout = TimeSpan.FromSeconds(10); });
+        s.AddSingleton<MainViewModel>();
+        s.AddTransient<LoginViewModel>();
+        _sp = s.BuildServiceProvider();
     }
 
     protected override void OnStartup(StartupEventArgs e)
     {
-        var mainViewModel = _serviceProvider.GetRequiredService<MainViewModel>();
-        var mainWindow = new MainWindow(mainViewModel);
-        mainWindow.Show();
+        ShutdownMode = ShutdownMode.OnExplicitShutdown;
 
-        // 显示登录窗口
-        var loginView = _serviceProvider.GetRequiredService<LoginView>();
-        if (loginView.ShowDialog() != true)
+        var login = new LoginWindow(_sp.GetRequiredService<LoginViewModel>());
+        if (login.ShowDialog() != true)
         {
-            mainWindow.Close();
+            Shutdown();
+            return;
         }
+
+        var mainVm = _sp.GetRequiredService<MainViewModel>();
+        mainVm.UserName = (string)Properties["UserName"];
+        mainVm.Status = "已连接";
+
+        ShutdownMode = ShutdownMode.OnMainWindowClose;
+        MainWindow = new MainWindow(mainVm);
+        MainWindow.Show();
     }
 }

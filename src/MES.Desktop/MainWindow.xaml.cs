@@ -5,9 +5,9 @@ namespace MES.Desktop;
 
 public partial class MainWindow : Window
 {
-    public MainWindow(MainViewModel viewModel)
+    public MainWindow(MainViewModel vm)
     {
         InitializeComponent();
-        DataContext = viewModel;
+        DataContext = vm;
     }
 }

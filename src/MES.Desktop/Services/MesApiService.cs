@@ -4,114 +4,55 @@ using System.Text.Json.Serialization;
 
 namespace MES.Desktop.Services;
 
-// ── API DTOs ──────────────────────────────────────────
-
 public class ApiResponse<T>
 {
-    [JsonPropertyName("success")]
-    public bool Success { get; set; }
-
-    [JsonPropertyName("data")]
-    public T? Data { get; set; }
-
-    [JsonPropertyName("message")]
-    public string? Message { get; set; }
+    [JsonPropertyName("success")] public bool Success { get; set; }
+    [JsonPropertyName("data")] public T? Data { get; set; }
+    [JsonPropertyName("message")] public string? Message { get; set; }
 }
 
 public class LoginRequest
 {
-    [JsonPropertyName("username")]
-    public string Username { get; set; } = string.Empty;
-
-    [JsonPropertyName("password")]
-    public string Password { get; set; } = string.Empty;
+    [JsonPropertyName("username")] public string Username { get; set; } = "";
+    [JsonPropertyName("password")] public string Password { get; set; } = "";
 }
 
-public class LoginResponse
+public class LoginResult
 {
-    [JsonPropertyName("token")]
-    public string Token { get; set; } = string.Empty;
-
-    [JsonPropertyName("username")]
-    public string Username { get; set; } = string.Empty;
-
-    [JsonPropertyName("realName")]
-    public string RealName { get; set; } = string.Empty;
-
-    [JsonPropertyName("roleName")]
-    public string RoleName { get; set; } = string.Empty;
+    [JsonPropertyName("token")] public string Token { get; set; } = "";
+    [JsonPropertyName("username")] public string Username { get; set; } = "";
+    [JsonPropertyName("realName")] public string RealName { get; set; } = "";
+    [JsonPropertyName("roleName")] public string RoleName { get; set; } = "";
 }
 
-public class ProductionProgress
+public class DashboardStats
 {
-    [JsonPropertyName("workOrderId")]
-    public int WorkOrderId { get; set; }
-
-    [JsonPropertyName("orderNo")]
-    public string OrderNo { get; set; } = string.Empty;
-
-    [JsonPropertyName("productName")]
-    public string ProductName { get; set; } = string.Empty;
-
-    [JsonPropertyName("targetQuantity")]
-    public int TargetQuantity { get; set; }
-
-    [JsonPropertyName("completedQuantity")]
-    public int CompletedQuantity { get; set; }
-
-    [JsonPropertyName("defectQuantity")]
-    public int DefectQuantity { get; set; }
-
-    [JsonPropertyName("completionRate")]
-    public double CompletionRate { get; set; }
-
-    [JsonPropertyName("qualityRate")]
-    public double QualityRate { get; set; }
-
-    [JsonPropertyName("status")]
-    public int Status { get; set; }
+    [JsonPropertyName("activeOrders")] public int ActiveOrders { get; set; }
+    [JsonPropertyName("pendingOrders")] public int PendingOrders { get; set; }
+    [JsonPropertyName("todayCompleted")] public int TodayCompleted { get; set; }
+    [JsonPropertyName("totalDefects")] public int TotalDefects { get; set; }
 }
-
-// ── API Service ──────────────────────────────────────
 
 public class MesApiService
 {
-    private readonly HttpClient _http;
-
-    public MesApiService(HttpClient http)
-    {
-        _http = http;
-    }
+    readonly HttpClient _http;
+    public MesApiService(HttpClient h) => _http = h;
 
     public string? Token
     {
         get => _http.DefaultRequestHeaders.Authorization?.Parameter;
-        set
-        {
-            _http.DefaultRequestHeaders.Authorization =
-                string.IsNullOrEmpty(value) ? null :
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", value);
-        }
+        set => _http.DefaultRequestHeaders.Authorization = value is null ? null : new("Bearer", value);
     }
 
-    public async Task<ApiResponse<LoginResponse>> LoginAsync(LoginRequest request)
+    public async Task<ApiResponse<LoginResult>> LoginAsync(LoginRequest r)
     {
-        var response = await _http.PostAsJsonAsync("api/auth/login", request);
-        var result = await response.Content.ReadFromJsonAsync<ApiResponse<LoginResponse>>();
-        return result ?? new ApiResponse<LoginResponse> { Success = false, Message = "请求失败" };
+        var res = await _http.PostAsJsonAsync("api/auth/login", r);
+        return (await res.Content.ReadFromJsonAsync<ApiResponse<LoginResult>>()) ?? new() { Success = false, Message = "请求失败" };
     }
 
-    public async Task<ApiResponse<List<ProductionProgress>>> GetProductionProgressAsync()
+    public async Task<ApiResponse<List<object>>> GetProductionProgressAsync()
     {
-        var result = await _http.GetFromJsonAsync<ApiResponse<List<ProductionProgress>>>("api/dashboard/production-progress");
-        return result ?? new ApiResponse<List<ProductionProgress>> { Success = false };
+        try { return await _http.GetFromJsonAsync<ApiResponse<List<object>>>("api/dashboard/production-progress") ?? new(); }
+        catch { return new() { Success = false, Message = "连接失败" }; }
     }
-
-    public async Task<ApiResponse<object>> GetDashboardStatsAsync()
-    {
-        var result = await _http.GetFromJsonAsync<ApiResponse<object>>("api/dashboard/stats");
-        return result ?? new ApiResponse<object> { Success = false };
-    }
-
-    public string GetApiBaseUrl() => _http.BaseAddress?.ToString() ?? "http://localhost:5000/";
 }

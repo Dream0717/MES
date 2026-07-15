@@ -6,69 +6,37 @@ namespace MES.Desktop.ViewModels;
 
 public class LoginViewModel : ViewModelBase
 {
-    private readonly MesApiService _api;
-    private readonly MainViewModel _mainViewModel;
+    readonly MesApiService _api;
 
-    public LoginViewModel(MesApiService api, MainViewModel mainViewModel)
+    public LoginViewModel(MesApiService api) => _api = api;
+
+    public string Username { get; set; } = "admin";
+    public string Password { get; set; } = "admin123";
+
+    string _err = "";
+    public string Error { get => _err; set => Set(ref _err, value); }
+
+    bool _busy;
+    public bool IsBusy { get => _busy; set => Set(ref _busy, value); }
+
+    public ICommand LoginCmd => new AsyncRelayCommand(async () =>
     {
-        _api = api;
-        _mainViewModel = mainViewModel;
-    }
-
-    private string _username = "admin";
-    public string Username
-    {
-        get => _username;
-        set => SetProperty(ref _username, value);
-    }
-
-    private string _password = "admin123";
-    public string Password
-    {
-        get => _password;
-        set => SetProperty(ref _password, value);
-    }
-
-    private string _errorMessage = "";
-    public string ErrorMessage
-    {
-        get => _errorMessage;
-        set => SetProperty(ref _errorMessage, value);
-    }
-
-    public ICommand LoginCommand => new AsyncRelayCommand(async () =>
-    {
-        ErrorMessage = "";
-        IsBusy = true;
-
+        Error = ""; IsBusy = true;
         try
         {
-            var result = await _api.LoginAsync(new LoginRequest
+            var r = await _api.LoginAsync(new() { Username = Username, Password = Password });
+            if (r.Success && r.Data != null)
             {
-                Username = Username,
-                Password = Password
-            });
-
-            if (result.Success && result.Data != null)
-            {
-                _api.Token = result.Data.Token;
-                _mainViewModel.IsLoggedIn = true;
-                _mainViewModel.UserName = result.Data.RealName;
-                _mainViewModel.StatusText = "已登录";
-                _mainViewModel.WebViewUrl = _api.GetApiBaseUrl();
+                _api.Token = r.Data.Token;
+                // 通知主窗口登录成功，关闭登录窗口
+                Application.Current.Properties["LoggedIn"] = true;
+                Application.Current.Properties["UserName"] = r.Data.RealName;
+                foreach (Window w in Application.Current.Windows)
+                    if (w is Views.LoginWindow) { w.DialogResult = true; w.Close(); }
             }
-            else
-            {
-                ErrorMessage = result.Message ?? "登录失败";
-            }
+            else Error = r.Message ?? "登录失败";
         }
-        catch (Exception ex)
-        {
-            ErrorMessage = $"连接失败: {ex.Message}";
-        }
-        finally
-        {
-            IsBusy = false;
-        }
+        catch (Exception ex) { Error = $"连接失败: {ex.Message}"; }
+        finally { IsBusy = false; }
     });
 }

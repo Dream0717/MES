@@ -1,68 +1,35 @@
-using System.Collections.ObjectModel;
 using System.Windows.Input;
-using MES.Desktop.Services;
 
 namespace MES.Desktop.ViewModels;
 
 public class MainViewModel : ViewModelBase
 {
-    private readonly MesApiService _api;
+    string _status = "就绪";
+    public string Status { get => _status; set => Set(ref _status, value); }
 
-    public MainViewModel(MesApiService api)
+    string _userName = "";
+    public string UserName { get => _userName; set => Set(ref _userName, value); }
+
+    object? _currentPage;
+    public object? CurrentPage { get => _currentPage; set => Set(ref _currentPage, value); }
+
+    // 导航命令
+    public ICommand NavDashboardCmd => new RelayCommand(_ => Status = "生产看板");
+    public ICommand NavOrdersCmd => new RelayCommand(_ => Status = "工单管理");
+    public ICommand NavProductsCmd => new RelayCommand(_ => Status = "产品管理");
+    public ICommand NavWorkstationsCmd => new RelayCommand(_ => Status = "工位管理");
+    public ICommand NavReportsCmd => new RelayCommand(_ => Status = "报工查询");
+    public ICommand NavUsersCmd => new RelayCommand(_ => Status = "用户管理");
+    public ICommand NavMonitorCmd => new RelayCommand(_ => Status = "设备监控");
+
+    // 打开浏览器用于查询操作
+    public ICommand OpenBrowserCmd => new RelayCommand(_ =>
     {
-        _api = api;
-    }
-
-    // ── 属性 ──
-
-    private bool _isLoggedIn;
-    public bool IsLoggedIn
-    {
-        get => _isLoggedIn;
-        set
+        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
         {
-            SetProperty(ref _isLoggedIn, value);
-            OnPropertyChanged(nameof(IsLoggedOut));
-        }
-    }
-
-    public bool IsLoggedOut => !IsLoggedIn;
-
-    private string _userName = "";
-    public string UserName
-    {
-        get => _userName;
-        set => SetProperty(ref _userName, value);
-    }
-
-    private string _statusText = "就绪";
-    public string StatusText
-    {
-        get => _statusText;
-        set => SetProperty(ref _statusText, value);
-    }
-
-    private string _webViewUrl = "about:blank";
-    public string WebViewUrl
-    {
-        get => _webViewUrl;
-        set => SetProperty(ref _webViewUrl, value);
-    }
-
-    // ── 导航命令 ──
-
-    public ICommand NavigateToDashboardCommand => new RelayCommand(_ =>
-    {
-        WebViewUrl = $"{_api.GetApiBaseUrl()}";
-    });
-
-    public ICommand NavigateToWorkOrdersCommand => new RelayCommand(_ =>
-    {
-        WebViewUrl = $"{_api.GetApiBaseUrl()}workorders";
-    });
-
-    public ICommand NavigateToProductsCommand => new RelayCommand(_ =>
-    {
-        WebViewUrl = $"{_api.GetApiBaseUrl()}products";
+            FileName = "http://localhost:5000/swagger",
+            UseShellExecute = true
+        });
+        Status = "已打开浏览器";
     });
 }
